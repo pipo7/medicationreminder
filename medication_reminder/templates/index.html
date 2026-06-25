@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medication Dashboard</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --ink: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --warning: #ff9f1f;
+      --ok: #3fb950;
+      --line: #30363d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, #1f6feb 0%, #0969da 100%);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 36px;
+      letter-spacing: 0.4px;
+      color: #ffffff;
+    }
+
+    .sub {
+      margin: 6px 0 0;
+      color: #b1bac4;
+      font-size: 16px;
+    }
+
+    .top-links {
+      margin-top: 10px;
+    }
+
+    .top-links a {
+      color: #58a6ff;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .body {
+      padding: 18px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 200px);
+    }
+
+    .table-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+      border-radius: 8px;
+    }
+
+    .table-container::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+      background: var(--surface);
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+      background: #ffffff;
+      border-radius: 6px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb:hover {
+      background: #e0e0e0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 18px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+
+    th {
+      font-size: 15px;
+      text-transform: uppercase;
+      color: #ffffff;
+      font-weight: bold;
+      letter-spacing: 0.6px;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+    }
+
+    .status {
+      font-weight: 700;
+    }
+
+    .status.due {
+      color: var(--warning);
+      animation: pulse 1.2s infinite;
+    }
+
+    .status.overdue {
+      color: #b00020;
+      animation: pulse 1.2s infinite;
+    }
+
+    .status.taken {
+      color: var(--ok);
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.2s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .take-btn {
+      background: #0066cc;
+      color: white;
+    }
+
+    .empty {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .header, .body { padding: 14px; }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      td {
+        border: none;
+        padding: 6px 0;
+      }
+      td::before {
+        content: attr(data-label) ": ";
+        color: var(--muted);
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <h1>CapConnect Home</h1>
+      <p class="sub">Shows medicine name, time, and whether it is taken or still due.</p>
+      <div class="top-links"><a href="/updates/admin">Open Admin Page</a></div>
+    </div>
+
+    <div class="body">
+      <div class="table-container" {% if not reminders %}class="hidden"{% endif %}>
+        <table id="reminder-table">
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Dosage</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="reminder-body">
+            {% for reminder in reminders %}
+            <tr data-reminder-id="{{ reminder.reminder_id }}" data-time="{{ reminder.reminder_time }}" data-taken="{{ '1' if reminder.taken else '0' }}" data-unlocked="0">
+              <td data-label="Medicine">{{ reminder.name }}</td>
+              <td data-label="Dosage">{{ reminder.dosage }}</td>
+              <td data-label="Time">{{ reminder.reminder_time }}</td>
+              <td data-label="Status" class="status {{ 'taken' if reminder.taken else '' }}">
+                {% if reminder.taken %}
+                  Medicine taken
+                {% else %}
+                  Medicine to be taken | {{ reminder.reminder_time }}
+                {% endif %}
+              </td>
+              <td data-label="Action">
+                <button class="take-btn" {% if reminder.taken or not reminder.due %}disabled{% endif %}>{% if reminder.taken %}Bottle Locked{% else %}Unlock bottle{% endif %}</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p id="empty-state" class="empty {% if reminders %}hidden{% endif %}">No medications configured yet. Add medicines from the Admin Page.</p>
+    </div>
+  </div>
+
+  <script>
+    const alertedSlots = new Set();
+    let didRunLoadVoice = false;
+
+    function getNowHHMM() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+
+    function getTodayKey() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function speakLine(text) {
+      if (!('speechSynthesis' in window)) {
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function playBeep() {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      setTimeout(() => {
+        osc.stop();
+        audioCtx.close();
+      }, 220);
+    }
+
+    async function runAlarmAndSpeech(text) {
+      for (let i = 0; i < 2; i++) {
+        playBeep();
+        speakLine(text);
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+      }
+    }
+
+    async function runSpeechThreeTimes(text) {
+      for (let i = 0; i < 2; i++) {
+        speakLine(text);
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+      }
+    }
+
+    async function announceAllPendingOnLoad() {
+      if (didRunLoadVoice) {
+        return;
+      }
+      didRunLoadVoice = true;
+
+      const nowHHMM = getNowHHMM();
+      const rows = document.querySelectorAll('tr[data-reminder-id]');
+      for (const row of rows) {
+        const taken = row.getAttribute('data-taken') === '1';
+        if (taken) {
+          continue;
+        }
+
+        const reminderTime = row.getAttribute('data-time');
+        if (!reminderTime) {
+          continue;
+        }
+        if (reminderTime >= nowHHMM) {
+          continue;
+        }
+
+        const speakText = `Medicine to be taken | ${reminderTime} (overdue)`;
+        await runSpeechThreeTimes(speakText);
+      }
+    }
+
+    function computeStatusClass(reminderTime, taken) {
+      if (taken) {
+        return 'status taken';
+      }
+
+      const nowHHMM = getNowHHMM();
+      if (reminderTime < nowHHMM) {
+        return 'status overdue';
+      }
+      if (reminderTime === nowHHMM) {
+        return 'status due';
+      }
+
+      return 'status';
+    }
+
+    function computeStatusText(reminderTime, taken) {
+      if (taken) {
+        return 'Medicine taken';
+      }
+
+      const nowHHMM = getNowHHMM();
+      if (reminderTime < nowHHMM) {
+        return `Medicine to be taken | ${reminderTime} (overdue)`;
+      }
+
+      return `Medicine to be taken | ${reminderTime}`;
+    }
+
+    async function processBrowserTimeAlarms() {
+      const nowHHMM = getNowHHMM();
+      const todayKey = getTodayKey();
+      const rows = document.querySelectorAll('tr[data-reminder-id]');
+
+      for (const row of rows) {
+        const reminderId = row.getAttribute('data-reminder-id');
+        const reminderTime = row.getAttribute('data-time');
+        const taken = row.getAttribute('data-taken') === '1';
+        if (!reminderId || !reminderTime || taken) {
+          continue;
+        }
+
+        if (reminderTime < nowHHMM) {
+          const slotKey = `${todayKey}:${reminderId}:${reminderTime}`;
+          if (!alertedSlots.has(slotKey)) {
+            alertedSlots.add(slotKey);
+            const speakText = `Medicine to be taken | ${reminderTime} (overdue)`;
+            await runAlarmAndSpeech(speakText);
+          }
+        }
+      }
+    }
+
+    async function markTaken(reminderId) {
+      const row = document.querySelector(`tr[data-reminder-id="${reminderId}"]`);
+      if (!row) return;
+      
+      const isUnlocked = row.getAttribute('data-unlocked') === '1';
+      const isTaken = row.getAttribute('data-taken') === '1';
+      
+      if (isTaken) {
+        return; // Already taken, don't do anything
+      }
+      
+      if (!isUnlocked) {
+        // First click: just unlock, don't send to server yet
+        row.setAttribute('data-unlocked', '1');
+        const btn = row.querySelector('.take-btn');
+        btn.textContent = 'Lock the bottle';
+      } else {
+        // Second click: actually take the medicine and send to server
+        await fetch(`/take/${reminderId}`, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        await refreshRows();
+      }
+    }
+
+    function buildRow(reminder) {
+      const statusText = computeStatusText(reminder.reminder_time, reminder.taken);
+      const statusClass = computeStatusClass(reminder.reminder_time, reminder.taken);
+      const takeBtnDisabled = reminder.taken || !reminder.due ? 'disabled' : '';
+      const takenFlag = reminder.taken ? '1' : '0';
+      const btnText = reminder.taken ? 'Bottle Locked' : 'Unlock bottle';
+
+      return `
+        <tr data-reminder-id="${reminder.reminder_id}" data-time="${reminder.reminder_time}" data-taken="${takenFlag}" data-unlocked="0">
+          <td data-label="Medicine">${reminder.name}</td>
+          <td data-label="Dosage">${reminder.dosage}</td>
+          <td data-label="Time">${reminder.reminder_time}</td>
+          <td data-label="Status" class="${statusClass}">${statusText}</td>
+          <td data-label="Action"><button class="take-btn" ${takeBtnDisabled}>${btnText}</button></td>
+        </tr>
+      `;
+    }
+
+    async function refreshRows() {
+      const body = document.getElementById('reminder-body');
+      const table = document.getElementById('reminder-table');
+      const emptyState = document.getElementById('empty-state');
+      if (!body || !table || !emptyState) return;
+
+      const res = await fetch('/api/reminders');
+      const reminders = await res.json();
+      body.innerHTML = reminders.map(buildRow).join('');
+
+      if (reminders.length > 0) {
+        table.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+      } else {
+        table.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+      }
+
+      bindButtons();
+      await processBrowserTimeAlarms();
+    }
+
+    function bindButtons() {
+      const takeBtns = document.querySelectorAll('.take-btn');
+      takeBtns.forEach((btn) => {
+        btn.addEventListener('click', async (event) => {
+          const row = event.target.closest('tr[data-reminder-id]');
+          if (!row) return;
+          const reminderId = row.getAttribute('data-reminder-id');
+          if (!reminderId) return;
+          await markTaken(reminderId);
+        });
+      });
+
+    }
+
+    function refreshStatusVisualsByBrowserTime() {
+      const rows = document.querySelectorAll('tr[data-reminder-id]');
+      for (const row of rows) {
+        const reminderTime = row.getAttribute('data-time');
+        const taken = row.getAttribute('data-taken') === '1';
+        const unlocked = row.getAttribute('data-unlocked') === '1';
+        const nowHHMM = getNowHHMM();
+        const statusCell = row.querySelector('td[data-label="Status"]');
+        const takeBtn = row.querySelector('.take-btn');
+        
+        if (!reminderTime || !statusCell) {
+          continue;
+        }
+        statusCell.className = computeStatusClass(reminderTime, taken);
+        statusCell.textContent = computeStatusText(reminderTime, taken);
+        if (takeBtn) {
+          takeBtn.disabled = taken || reminderTime > nowHHMM;
+          
+          if (taken) {
+            takeBtn.textContent = 'Bottle Locked';
+          } else if (unlocked) {
+            takeBtn.textContent = 'Lock the bottle';
+          } else {
+            takeBtn.textContent = 'Unlock bottle';
+          }
+        }
+      }
+    }
+
+    bindButtons();
+    refreshStatusVisualsByBrowserTime();
+    announceAllPendingOnLoad();
+    setInterval(async () => {
+      refreshStatusVisualsByBrowserTime();
+      await processBrowserTimeAlarms();
+    }, 15000);
+    setInterval(refreshRows, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CapConnect Admin</title>
+  <style>
+    :root {
+      --bg: #eef3fb;
+      --surface: #ffffff;
+      --ink: #1b2a41;
+      --muted: #52637a;
+      --accent: #0b6caa;
+      --line: #d6dfe9;
+      --danger-bg: #ffe6e3;
+      --danger-ink: #9b1f14;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 15% 10%, #dbe7fb 0%, transparent 40%),
+        radial-gradient(circle at 85% 20%, #d7f3f1 0%, transparent 38%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      padding: 24px;
+    }
+
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 12px 34px rgba(11, 25, 44, 0.12);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(120deg, #eef7ff 0%, #eafdf7 100%);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0.3px;
+    }
+
+    .header a {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .body {
+      padding: 20px 22px 24px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      background: #fcfdff;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .error {
+      border: 1px solid #f5b6b0;
+      background: var(--danger-bg);
+      color: var(--danger-ink);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .add-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .username-section {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: #f0f5fa;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+
+    .username-section label {
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    .username-section input {
+      margin: 0;
+      flex: 1;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      color: var(--ink);
+      background: white;
+    }
+
+    .hint {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-remove {
+      background: #b42318;
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .btn-update {
+      background: #0b6caa;
+      padding: 7px 10px;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn-cancel {
+      background: #999;
+      padding: 10px 14px;
+      border-radius: 10px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .btn-save {
+      background: var(--accent);
+      padding: 10px 14px;
+      border-radius: 10px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 9px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      text-transform: uppercase;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.6px;
+    }
+
+    .logs-table {
+      width: 100%;
+      font-size: 13px;
+      border-collapse: collapse;
+    }
+
+    .logs-table th,
+    .logs-table td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logs-table th {
+      background: #f8f9fa;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .log-action {
+      font-weight: 600;
+      color: #0b6caa;
+    }
+
+    .log-user {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .log-time {
+      color: #999;
+      font-size: 12px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <h1>CapConnect Admin</h1>
+      <a href="/">Back to Reminder Board</a>
+    </div>
+
+    <div class="body">
+      <div class="card">
+        <h2>Add Medication</h2>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form class="add-form" method="post">
+          <div class="username-section">
+            <label for="username">Your Name:</label>
+            <input id="username" name="username" placeholder="Enter your name (required)" value="" required />
+          </div>
+
+          <div>
+            <label for="name">Medicine Name</label>
+            <input id="name" name="name" placeholder="Aspirin" required />
+          </div>
+
+          <div>
+            <label for="dosage">Dosage</label>
+            <input id="dosage" name="dosage" placeholder="500mg" required />
+          </div>
+
+          <div class="full">
+            <label for="reminder_times">Times (comma-separated)</label>
+            <input id="reminder_times" name="reminder_times" placeholder="08:00,14:00,20:00" required />
+            <div class="hint">Use HH:MM format, 24-hour clock.</div>
+          </div>
+
+          <div>
+            <label for="day_type">Schedule</label>
+            <select id="day_type" name="day_type">
+              <option value="everyday">Everyday</option>
+              <option value="weekdays">Weekdays (Mon-Fri)</option>
+              <option value="weekends">Weekends (Sat-Sun)</option>
+            </select>
+          </div>
+
+          <div class="full">
+            <button type="submit">Save Medication</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Current Medications</h2>
+        {% if medications %}
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Dosage</th>
+              <th>Times</th>
+              <th>Schedule</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for med in medications %}
+            <tr>
+              <td>{{ med[1] }}</td>
+              <td>{{ med[2] }}</td>
+              <td>{{ med[3] }}</td>
+              <td>{{ med[4] }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-update" onclick="openEditModal({{ med[0] }}, '{{ med[3] }}')">Update</button>
+                  <form class="remove-form" method="post" action="/updates/admin/delete/{{ med[0] }}" onsubmit="return confirm('Remove this medication?'); return false;" style="margin: 0;">
+                    <input type="hidden" name="username" value="" class="form-username" />
+                    <button class="btn-remove" type="submit">Remove</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p>No medications yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2>Activity Logs</h2>
+        {% if logs %}
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Action</th>
+              <th>Details</th>
+              <th>User</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td><strong>{{ log[1] }}</strong></td>
+              <td class="log-action">
+                {% if log[2] == 'created' %}
+                  Added
+                {% elif log[2] == 'updated_times' %}
+                  Updated
+                {% elif log[2] == 'deleted' %}
+                  Removed
+                {% else %}
+                  {{ log[2] }}
+                {% endif %}
+              </td>
+              <td>
+                {% if log[3] %}
+                  <span style="color: #999;">{{ log[3][:30] }}</span>
+                {% endif %}
+                {% if log[4] %}
+                  <span style="color: #0b6caa;">→ {{ log[4][:30] }}</span>
+                {% endif %}
+              </td>
+              <td class="log-user">{{ log[5] }}</td>
+              <td class="log-time">{{ log[6] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p>No activity yet.</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2>Medicines Dosage/Count Taken by Date</h2>
+        <canvas id="medicinesTakenChart" style="max-height: 300px;"></canvas>
+        <p id="chart-loading" style="color: var(--muted); text-align: center;">Loading chart data...</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h3>Update Reminder Times</h3>
+      <form id="editForm" method="post">
+        <input type="hidden" name="username" value="" class="form-username-modal" />
+        <label for="editTimes">Times (comma-separated, HH:MM format):</label>
+        <input id="editTimes" name="reminder_times" placeholder="08:00,14:00,20:00" required />
+        <div class="hint">Use HH:MM format, 24-hour clock.</div>
+        <div class="modal-buttons">
+          <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn-save">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const usernameField = document.getElementById('username');
+    const savedUsername = localStorage.getItem('medicineAdminUsername') || '';
+    if (usernameField) {
+      usernameField.value = savedUsername;
+    }
+
+    function saveUsername() {
+      const username = usernameField.value.trim();
+      if (username) {
+        localStorage.setItem('medicineAdminUsername', username);
+      }
+    }
+
+    function updateAllUsernames() {
+      const username = usernameField.value.trim() || 'anonymous';
+      document.querySelectorAll('.form-username').forEach(field => {
+        field.value = username;
+      });
+      saveUsername();
+    }
+
+    if (usernameField) {
+      usernameField.addEventListener('change', updateAllUsernames);
+      usernameField.addEventListener('blur', updateAllUsernames);
+    }
+
+    function openEditModal(medId, currentTimes) {
+      const modal = document.getElementById('editModal');
+      const form = document.getElementById('editForm');
+      const timesInput = document.getElementById('editTimes');
+      
+      timesInput.value = currentTimes;
+      form.action = `/updates/admin/update/${medId}`;
+      modal.classList.add('active');
+      timesInput.focus();
+      
+      const username = usernameField.value.trim() || 'anonymous';
+      form.querySelector('.form-username-modal').value = username;
+    }
+
+    function closeEditModal() {
+      const modal = document.getElementById('editModal');
+      modal.classList.remove('active');
+    }
+
+    document.getElementById('editModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        closeEditModal();
+      }
+    });
+
+    // Handle Add Medication form submission
+    const addMedicationForm = document.querySelector('.add-form');
+    if (addMedicationForm) {
+      addMedicationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(addMedicationForm);
+        
+        try {
+          const response = await fetch('/updates/admin', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (response.ok) {
+            // Clear form fields
+            addMedicationForm.reset();
+            // Reload the page to show the new medication in the table
+            location.reload();
+          } else {
+            // If there was an error, reload to show error message
+            location.reload();
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error adding medication. Please try again.');
+        }
+      });
+    }
+
+    // Initialize chart for medicines taken by date
+    async function initializeMedicinesTakenChart() {
+      try {
+        const response = await fetch('/api/medicines-taken-by-date');
+        const data = await response.json();
+        
+        if (!data || data.length === 0) {
+          document.getElementById('chart-loading').textContent = 'No data available yet.';
+          return;
+        }
+        
+        // Reverse to show oldest dates first
+        data.reverse();
+        
+        const dates = data.map(d => d.date_display);
+        const counts = data.map(d => d.count);
+        const colors = [
+          '#0b6caa', '#0d7ba4', '#0f889e', '#119598', '#13a292',
+          '#15af8c', '#17bc86', '#19c980', '#1bd67a', '#1de374',
+          '#1ff06e', '#21fd68', '#2ef462', '#3beb5c', '#48e256'
+        ];
+        
+        const ctx = document.getElementById('medicinesTakenChart');
+        if (ctx) {
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: dates,
+              datasets: [{
+                label: 'Medicines Count',
+                data: counts,
+                backgroundColor: colors.slice(0, counts.length),
+                borderColor: '#0b6caa',
+                borderWidth: 1,
+                borderRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  display: true,
+                  labels: {
+                    color: '#1b2a41',
+                    font: {
+                      size: 13,
+                      weight: '700'
+                    }
+                  }
+                },
+                tooltip: {
+                  callbacks: {
+                    afterLabel: function(context) {
+                      const dataIndex = context.dataIndex;
+                      const medicines = data[dataIndex].medicines;
+                      return 'Medicines: ' + medicines.join(', ');
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    stepSize: 1,
+                    color: '#52637a'
+                  },
+                  grid: {
+                    color: '#d6dfe9'
+                  },
+                  title: {
+                    display: true,
+                    text: 'Count',
+                    color: '#1b2a41'
+                  }
+                },
+                x: {
+                  ticks: {
+                    color: '#52637a'
+                  },
+                  grid: {
+                    display: false
+                  }
+                }
+              }
+            }
+          });
+          document.getElementById('chart-loading').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error loading chart data:', error);
+        document.getElementById('chart-loading').textContent = 'Error loading chart data.';
+      }
+    }
+    
+    // Initialize chart when page loads
+    initializeMedicinesTakenChart();
+
+    updateAllUsernames();
+  </script>
+</body>
+</html>
